@@ -1,3 +1,52 @@
+/*
+ * Seeed_Arduino_DAPLink.ino
+ *
+ * Copyright (c) 2020 seeed technology co., ltd.  
+ * Author      : weihong.cai (weihong.cai@seeed.cc)  
+ * Create Time : Aug 2020
+ * Change Log  : 
+ *
+ * The MIT License (MIT)
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software istm
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS INcommInterface
+ * THE SOFTWARE.
+ *
+ * Get start:
+ * 1. For a device to be correctly detected as a CMSIS-DAP adapter, it must contain the string "CMSIS-DAP" in 
+ *    its USB product name. Unfortunately we can't override this from within the sketch, you'll have to edit
+ *    files in your Arduino installation to change it.
+ *    edit ~/Arduino15/packages/Seeeduino/hardware/samd/1.7.7/boards.txt
+ *    add CMSIS-DAP to seeed_wio_terminal.build.usb_product:
+ *    
+ *    seeed_wio_terminal.build.usb_product="Seeed CMSIS-DAP"
+ * 
+ * 2. Download the Adafruit TinyUSB Library from: https://github.com/adafruit/Adafruit_TinyUSB_Arduino.
+ *    And add it to your local arduino library.
+ * 3. Arduino IDE tool-->Select the board: Seeeduino Wio Terminal. 
+ * 4. Arduino IDE tool-->Select the USB Stack: TinyUSB. 
+ * 5. Arduino IDE tool-->Select the COM port. 
+ *
+ * WARNING:
+ *   This demo is just a test-demo. At present, it only enumerate a HID Device to communicate with host(PC).
+ *   But it can't work as a DAPLink adapter. I think that it need to deal with the problem of data interaction 
+ *   between host and device. If there is any progress, please tell to me.
+ *
+ */
 
 #include "Adafruit_TinyUSB.h"
 #include "DAP_config.h"
