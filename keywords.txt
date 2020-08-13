@@ -1,0 +1,9 @@
+Adafruit_USBD_HID	KEYWORD1
+
+enableOutEndpoint	KEYWORD2
+setPollInterval	KEYWORD2
+setBootProtocol	KEYWORD2
+setReportDescriptor	KEYWORD2
+setReportCallback	KEYWORD2
+begin	KEYWORD2
+DAP_Setup	KEYWORD2
