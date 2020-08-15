@@ -71,7 +71,7 @@ uint8_t rawhidResponse[DAP_PACKET_SIZE];
 
 uint8_t const desc_hid_report[] =
 {
-	// TUD_HID_REPORT_DESC_GENERIC_INOUT(64)
+    // TUD_HID_REPORT_DESC_GENERIC_INOUT(64)
     /* HID */
 //     0x06, 0xC0, 0xFF,      /* 30 */
 //     0x0A, 0x00, 0x0C,
@@ -217,10 +217,10 @@ void setup() {
     
     DAP_Setup();
 
-	recv_idx = 0;
-	send_idx = 0;
-	USB_ResponseIdle = 1;
-	free_count = FREE_COUNT_INIT;
+    recv_idx = 0;
+    send_idx = 0;
+    USB_ResponseIdle = 1;
+    free_count = FREE_COUNT_INIT;
     send_count = SEND_COUNT_INIT;
 }
 
@@ -341,7 +341,7 @@ void set_report_callback(uint8_t report_id, hid_report_type_t report_type, uint8
 //   char data[64];
 //   memset(data,0,64);
 //   data[1] = 3;
-    
+    int i;
     // This example doesn't use multiple report and report ID
     (void) report_id;
     (void) report_type;
@@ -379,9 +379,10 @@ void set_report_callback(uint8_t report_id, hid_report_type_t report_type, uint8
 
 //    usb_hid.sendReport(0, buffer, sizeof(buffer));
 
+    // main_led_state_t led_next_state = MAIN_LED_FLASH;
     switch (report_type) {
         // case HID_REPORT_OUTPUT:
-		case 0:
+        case 0:
             if (bufsize == 0) {
                 break;
             }
@@ -396,19 +397,29 @@ void set_report_callback(uint8_t report_id, hid_report_type_t report_type, uint8
             if (free_count > 0) {
                 free_count--;
                 memcpy(USB_Request[recv_idx], buffer, bufsize);
+
                 DAP_ExecuteCommand(buffer, USB_Request[recv_idx]);
-				// if(usbd_hid_no_activity(USB_Request[recv_idx]) == 1){
+                // if(usbd_hid_no_activity(USB_Request[recv_idx]) == 1){
                 //     //revert HID LED to default if the response is null
                 //     // led_next_state = MAIN_LED_DEF;
                 // }
+
                 recv_idx = (recv_idx + 1) % DAP_PACKET_COUNT;
                 send_count++;
                 if (USB_ResponseIdle) {
                     hid_send_packet();
+                    
+                    for(i=0; i<64; i++){
+                        Serial.print(USB_Request[recv_idx][i]);
+                        Serial.print(" ");
+                        Serial.print("\n");
+                    }
+
+                    Serial.print(USB_ResponseIdle);
                     USB_ResponseIdle = 0;
                 }
             } 
-			// else {
+            // else {
             //     util_assert(0);
             // }
             

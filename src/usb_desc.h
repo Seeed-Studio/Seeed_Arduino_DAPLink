@@ -43,8 +43,8 @@
 #define ENDPOINT_RECEIVE_ISOCHRONOUS    0x18
 #define ENDPOINT_TRANSMIT_ISOCHRONOUS   0x14
 
-#define VENDOR_ID             0x2886
-#define PRODUCT_ID            0x802d
+#define VENDOR_ID             0x0D28
+#define PRODUCT_ID            0x0204
 #define RAWHID_USAGE_PAGE     0xFFAB  // recommended: 0xFF00 to 0xFFFF
 #define RAWHID_USAGE          0x0200  // recommended: 0x0100 to 0xFFFF
 #define MANUFACTURER_NAME     {'S','e','e','e','d'}

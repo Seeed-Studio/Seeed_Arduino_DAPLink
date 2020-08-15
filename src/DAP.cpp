@@ -1449,15 +1449,21 @@ __weak uint32_t DAP_ProcessVendorCommand(const uint8_t *request, uint8_t *respon
 //             number of bytes in request (upper 16 bits)
 uint32_t DAP_ProcessCommand(const uint8_t *request, uint8_t *response) {
   uint32_t num;
+  
+  Serial.println(*request);
+//   if ((*request >= ID_DAP_Vendor0) && (*request <= ID_DAP_Vendor31)) {
+//     return DAP_ProcessVendorCommand(request, response);
+//   }
 
-  if ((*request >= ID_DAP_Vendor0) && (*request <= ID_DAP_Vendor31)) {
+  if (*request == 0)  {
     return DAP_ProcessVendorCommand(request, response);
   }
 
-  *response++ = *request;
+//   *response++ = *request;
 
   switch (*request++) {
     case ID_DAP_Info:
+      Serial.println("asasa");
       num = DAP_Info(*request, response+1);
       *response = (uint8_t)num;
       return ((2U << 16) + 2U + num);

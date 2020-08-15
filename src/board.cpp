@@ -99,8 +99,8 @@
 #define BOARD_SECRET    {1, 1, 1, 1, 1, 1, 1, 1, 1}
 
 #elif defined(SEEEDUINO) || defined(WIO_TERMINAL) || defined(SEEED_XIAO_M0)
-#define BOARD_ID        {2, 2, 2, 2}
-#define BOARD_SECRET    {2, 2, 2, 2, 2, 2, 2, 2, 2}
+#define BOARD_ID        {1, 1, 1, 1}
+#define BOARD_SECRET    {1, 1, 1, 1, 1, 1, 1, 1, 1}
 
 #endif
 
