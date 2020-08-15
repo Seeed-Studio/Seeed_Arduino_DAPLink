@@ -52,9 +52,26 @@
 #include "DAP_config.h"
 #include "DAP.h"
 
+static uint32_t free_count;
+static uint32_t send_count;
+
+static uint32_t recv_idx;
+static uint32_t send_idx;
+static volatile uint8_t  USB_ResponseIdle;
+
+// define usb_hid
+Adafruit_USBD_HID usb_hid;
+
+// uint8_t rawhidRequest[DAP_PACKET_SIZE];
+static uint8_t USB_Request [DAP_PACKET_COUNT][DAP_PACKET_SIZE];  // Request  Buffer
+uint8_t rawhidResponse[DAP_PACKET_SIZE];
+
+#define FREE_COUNT_INIT          (DAP_PACKET_COUNT)
+#define SEND_COUNT_INIT          0
 
 uint8_t const desc_hid_report[] =
 {
+	// TUD_HID_REPORT_DESC_GENERIC_INOUT(64)
     /* HID */
 //     0x06, 0xC0, 0xFF,      /* 30 */
 //     0x0A, 0x00, 0x0C,
@@ -178,13 +195,8 @@ uint8_t const desc_hid_report[] =
     0x09, 0x01,                  /*  USAGE (Vendor Usage 1) */
     0xB1, (0<<0 | 1<<1 | 0<<2),  /*  Feature(data,var,absolute) */
     0xC0                         /*  END_COLLECTION	 */
+
 };
-
-// define usb_hid
-Adafruit_USBD_HID usb_hid;
-
-uint8_t rawhidRequest[DAP_PACKET_SIZE];
-uint8_t rawhidResponse[DAP_PACKET_SIZE];
 
 void setup() {
     usb_hid.enableOutEndpoint(true);
@@ -204,6 +216,12 @@ void setup() {
     while( !USBDevice.mounted() ) delay(1);
     
     DAP_Setup();
+
+	recv_idx = 0;
+	send_idx = 0;
+	USB_ResponseIdle = 1;
+	free_count = FREE_COUNT_INIT;
+    send_count = SEND_COUNT_INIT;
 }
 
 void loop() {
@@ -245,7 +263,23 @@ void loop() {
 // #endif
 //     }
 //   }
+}
 
+// USB HID override function return 1 if the activity is trivial or response is null 
+// __attribute__((weak))
+// uint8_t usbd_hid_no_activity(U8 *buf)
+// {
+//     return 0;
+// }
+
+void hid_send_packet()
+{
+    if (send_count) {
+        send_count--;
+        usb_hid.sendReport(0, USB_Request[send_idx], DAP_PACKET_SIZE);
+        send_idx = (send_idx + 1) % DAP_PACKET_COUNT;
+        free_count++;
+    }
 }
 
 // Invoked when received GET_REPORT control request
@@ -253,17 +287,50 @@ void loop() {
 // Return zero will cause the stack to STALL request
 uint16_t get_report_callback (uint8_t report_id, hid_report_type_t report_type, uint8_t* buffer, uint16_t reqlen)
 {
-    digitalWrite(LED_BUILTIN, 1);
+    // int i;
+    // digitalWrite(LED_BUILTIN, 1);
   
     Serial.println("Seeed Arduino DAPLink 1.");
-    auto sz = DAP_ProcessCommand(buffer, rawhidResponse);
+    // auto sz = DAP_ProcessCommand(buffer, rawhidResponse);
+
+    // for(i=0; i<64; i++){
+	// 	Serial.println(rawhidResponse[i]);
+	// }
+
+    // if(sz > 0){
+    //   usb_hid.sendReport(0, rawhidResponse, sizeof(rawhidResponse));
+    // }
     
-    if(sz > 0){
-      usb_hid.sendReport(0, rawhidResponse, sizeof(rawhidResponse));
+    // digitalWrite(LED_BUILTIN, 1);
+    // return reqlen;
+
+    switch (report_type) {
+        case HID_REPORT_INPUT:
+            switch (reqlen) {
+                case USBD_HID_REQ_PERIOD_UPDATE:
+                    break;
+
+                case USBD_HID_REQ_EP_CTRL:
+                case USBD_HID_REQ_EP_INT:
+                    if (send_count > 0) {
+                        send_count--;
+                        memcpy(buffer, USB_Request[send_idx], DAP_PACKET_SIZE);
+                        send_idx = (send_idx + 1) % DAP_PACKET_COUNT;
+                        free_count++;
+                        return (DAP_PACKET_SIZE);
+                    } else if (reqlen == USBD_HID_REQ_EP_INT) {
+                        USB_ResponseIdle = 1;
+                    }
+                    break;
+            }
+
+            break;
+
+        case HID_REPORT_FEATURE:
+            break;
     }
-    
-    digitalWrite(LED_BUILTIN, 1);
-    return reqlen;
+
+    return (0);
 }
 
 // Invoked when received SET_REPORT control request or
@@ -302,7 +369,7 @@ void set_report_callback(uint8_t report_id, hid_report_type_t report_type, uint8
     Serial.print("report_type = ");
     Serial.print(report_type);
     Serial.print("\n");
-    
+
 //    Serial.print("data = ");
 //    Serial.print(data);
 //    Serial.print("\n");
@@ -311,4 +378,45 @@ void set_report_callback(uint8_t report_id, hid_report_type_t report_type, uint8
 //    usb_hid.sendReport(0, buffer, bufsize);
 
 //    usb_hid.sendReport(0, buffer, sizeof(buffer));
+
+    switch (report_type) {
+        // case HID_REPORT_OUTPUT:
+		case 0:
+            if (bufsize == 0) {
+                break;
+            }
+
+            if (buffer[0] == ID_DAP_TransferAbort) {
+                DAP_TransferAbort = 1;
+                break;
+            }
+
+            // Store data into request packet buffer
+            // If there are no free buffers discard the data
+            if (free_count > 0) {
+                free_count--;
+                memcpy(USB_Request[recv_idx], buffer, bufsize);
+                DAP_ExecuteCommand(buffer, USB_Request[recv_idx]);
+				// if(usbd_hid_no_activity(USB_Request[recv_idx]) == 1){
+                //     //revert HID LED to default if the response is null
+                //     // led_next_state = MAIN_LED_DEF;
+                // }
+                recv_idx = (recv_idx + 1) % DAP_PACKET_COUNT;
+                send_count++;
+                if (USB_ResponseIdle) {
+                    hid_send_packet();
+                    USB_ResponseIdle = 0;
+                }
+            } 
+			// else {
+            //     util_assert(0);
+            // }
+            
+            // main_blink_hid_led(led_next_state);
+
+            break;
+
+        case HID_REPORT_FEATURE:
+            break;
+    }
 }

@@ -78,6 +78,18 @@
 #define ENDPOINT5_CONFIG      ENDPOINT_RECEIVE_ONLY
 #define ENDPOINT6_CONFIG      ENDPOINT_TRANSMIT_ONLY
 
+/* HID Report Types */
+#define HID_REPORT_INPUT                0x01
+#define HID_REPORT_OUTPUT               0x02
+#define HID_REPORT_FEATURE              0x03
+
+/* USB HID Class API enumerated constants                                     */
+enum {
+    USBD_HID_REQ_EP_CTRL = 0,             /* Request from control endpoint      */
+    USBD_HID_REQ_EP_INT,                  /* Request from interrupt endpoint    */
+    USBD_HID_REQ_PERIOD_UPDATE            /* Request from periodic update       */
+};
+
 // #ifdef USB_DESC_LIST_DEFINE
 // #if defined(NUM_ENDPOINTS) && NUM_ENDPOINTS > 0
 // // NUM_ENDPOINTS = number of non-zero endpoints (0 to 15)
