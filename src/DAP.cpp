@@ -81,7 +81,7 @@ const char TargetDeviceVendor [] = TARGET_DEVICE_VENDOR;
 const char TargetDeviceName   [] = TARGET_DEVICE_NAME;
 #endif
 
-
+extern uint16_t Serial_u16[33];
 // Get DAP Information
 //   id:      info identifier
 //   info:    pointer to info data
@@ -104,8 +104,8 @@ static uint8_t DAP_Info(uint8_t id, uint8_t *info) {
       break;
     case DAP_ID_SER_NUM:
 #ifdef DAP_SER_NUM
-      memcpy(info, DAP_SerNum, sizeof(DAP_SerNum));
-      length = (uint8_t)sizeof(DAP_SerNum);
+      memcpy(info, &Serial_u16[0], 32);
+      length = 32;
 #endif
       break;
     case DAP_ID_FW_VER:
@@ -1430,17 +1430,6 @@ static uint32_t DAP_WriteAbort(const uint8_t *request, uint8_t *response) {
 }
 
 
-// Process DAP Vendor command request and prepare response
-// Default function (can be overridden)
-//   request:  pointer to request data
-//   response: pointer to response data
-//   return:   number of bytes in response (lower 16 bits)
-//             number of bytes in request (upper 16 bits)
-__weak uint32_t DAP_ProcessVendorCommand(const uint8_t *request, uint8_t *response) {
-  *response = ID_DAP_Invalid;
-  return ((1U << 16) | 1U);
-}
-
 
 // Process DAP command request and prepare response
 //   request:  pointer to request data
@@ -1450,20 +1439,14 @@ __weak uint32_t DAP_ProcessVendorCommand(const uint8_t *request, uint8_t *respon
 uint32_t DAP_ProcessCommand(const uint8_t *request, uint8_t *response) {
   uint32_t num;
   
-  Serial.println(*request);
-//   if ((*request >= ID_DAP_Vendor0) && (*request <= ID_DAP_Vendor31)) {
-//     return DAP_ProcessVendorCommand(request, response);
-//   }
-
-  if (*request == 0)  {
+  if ((*request >= ID_DAP_Vendor0) && (*request <= ID_DAP_Vendor31)) {
     return DAP_ProcessVendorCommand(request, response);
   }
 
-//   *response++ = *request;
+   *response++ = *request;
 
   switch (*request++) {
     case ID_DAP_Info:
-      Serial.println("asasa");
       num = DAP_Info(*request, response+1);
       *response = (uint8_t)num;
       return ((2U << 16) + 2U + num);

@@ -38,11 +38,9 @@
 #define os_dly_wait delayMicroseconds
 
 // #define DAP_VENDOR "Myelin"
-// #define DAP_VENDOR "Seeed"
-#define DAP_VENDOR "2222"
+#define DAP_VENDOR "Seeed"
 //#define DAP_PRODUCT "Arduino CMSIS-DAP"
-// #define DAP_PRODUCT "Seeed CMSIS-DAP"
-#define DAP_PRODUCT "3333"
+#define DAP_PRODUCT "Seeed CMSIS-DAP"
 // #define DAP_SER_NUM "1234"
 #define DAP_SER_NUM "1234"
 
@@ -167,7 +165,7 @@ Provides definitions about:
 // #define PIN_LED_CONNECTED LED_BUILTIN_TX
 // #define PIN_LED_RUNNING LED_BUILTIN_RX
 // #endif
-
+#ifdef WIO_TERMINAL
 #define PIN_SWDIO         D0
 #define PIN_SWCLK         D1
 #define PIN_TDO           D2
@@ -175,7 +173,17 @@ Provides definitions about:
 #define PIN_nRESET        D4
 #define PIN_LED_CONNECTED PIN_LED_TXL
 #define PIN_LED_RUNNING   PIN_LED_RXL
+#elif ARDUINO_SEEED_XIAO_M0
 
+#define PIN_SWDIO         A9
+#define PIN_SWCLK         A10
+#define PIN_TDO           A2
+#define PIN_TDI           A3
+#define PIN_nRESET        A8
+#define PIN_LED_CONNECTED PIN_LED_TXL
+#define PIN_LED_RUNNING   PIN_LED_RXL
+
+#endif 
 //**************************************************************************************************
 /**
 \defgroup DAP_Config_PortIO_gr CMSIS-DAP Hardware I/O Pin Access
