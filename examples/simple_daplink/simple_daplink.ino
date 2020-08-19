@@ -28,12 +28,7 @@
  *
  * Get start:
  * 1. For a device to be correctly detected as a CMSIS-DAP adapter, it must contain the string "CMSIS-DAP" in 
- *    its USB product name. Unfortunately we can't override this from within the sketch, you'll have to edit
- *    files in your Arduino installation to change it.
- *    edit ~/Arduino15/packages/Seeeduino/hardware/samd/1.7.7/boards.txt
- *    add CMSIS-DAP to seeed_wio_terminal.build.usb_product:
- *    
- *    seeed_wio_terminal.build.usb_product="Seeed CMSIS-DAP"
+ *    its USB product name. 
  * 
  * 2. Download the Adafruit TinyUSB Library from: https://github.com/adafruit/Adafruit_TinyUSB_Arduino.
  *    And add it to your local arduino library.
@@ -65,9 +60,13 @@ Adafruit_USBD_HID usb_hid;
 static uint8_t USB_Request [DAP_PACKET_COUNT][DAP_PACKET_SIZE];  // Request  Buffer
 uint8_t rawhidResponse[DAP_PACKET_SIZE];
 
+uint32_t baud;
+uint32_t old_baud;
+
 #define FREE_COUNT_INIT          (DAP_PACKET_COUNT)
 #define SEND_COUNT_INIT          0
 
+#define SerialTTL    Serial1
 
 uint8_t const desc_hid_report[] =
 {
@@ -298,8 +297,10 @@ void setup() {
     pinMode(LED_BUILTIN, OUTPUT);
     
     Serial.begin(115200);
-    // Serial1.begin(115200);
-    
+    baud = Serial.getBaud();
+    old_baud = baud;
+    SerialTTL.begin(baud);
+
     // wait until device mounted
     while( !USBDevice.mounted() ) delay(1);
     
@@ -312,10 +313,30 @@ void setup() {
     send_count = SEND_COUNT_INIT;
 
     USBDevice.getSerialDescriptor(Serial_u16);
+
 }
 
 
-void loop() {}
+void loop() {
+  // put your main code here, to run repeatedly:
+  baud = Serial.getBaud();
+  if (baud != old_baud) {
+    SerialTTL.begin(baud);
+    while (!SerialTTL);
+    old_baud = baud;
+  }
+
+  if (Serial.available() > 0)
+  {
+    char c = Serial.read();
+    SerialTTL.write(c);
+  }
+
+  if (SerialTTL.available() > 0) {
+    char c = SerialTTL.read();
+    Serial.write(c);
+  }
+}
 void hid_send_packet()
 {
     if (send_count) {
