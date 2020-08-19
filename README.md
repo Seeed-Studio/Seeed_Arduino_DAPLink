@@ -3,17 +3,13 @@ An Arduino Library for Seeed Arduino DAPLink.
 
 
 ## Get Started
-1. Edit ~/Arduino15/packages/Seeeduino/hardware/samd/1.7.7/boards.txt. Add CMSIS-DAP to seeed_wio_terminal.build.usb_product:
-```
-seeed_wio_terminal.build.usb_product="Seeed CMSIS-DAP"
-```
-2. Download the Adafruit TinyUSB Library from: [Adafruit_TinyUSB_Arduino](https://github.com/adafruit/Adafruit_TinyUSB_Arduino)
+1. Download the Adafruit TinyUSB Library from: [Adafruit_TinyUSB_Arduino](https://github.com/adafruit/Adafruit_TinyUSB_Arduino)
 
-3. Arduino IDE tool-->Select the board: Seeeduino Wio Terminal.
+2. Arduino IDE tool-->Select the board: Seeeduino samd Serial board.
 
-4. Arduino IDE tool-->Select the USB Stack: TinyUSB.
+3. Arduino IDE tool-->Select the USB Stack: TinyUSB.
 
-5. Arduino IDE tool-->Select the COM port.
+4. Arduino IDE tool-->Select the COM port.
 
 
 ## Contributing
