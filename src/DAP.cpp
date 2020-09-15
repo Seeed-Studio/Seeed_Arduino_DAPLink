@@ -81,7 +81,6 @@ const char TargetDeviceVendor [] = TARGET_DEVICE_VENDOR;
 const char TargetDeviceName   [] = TARGET_DEVICE_NAME;
 #endif
 
-extern uint16_t Serial_u16[33];
 // Get DAP Information
 //   id:      info identifier
 //   info:    pointer to info data
@@ -104,8 +103,7 @@ static uint8_t DAP_Info(uint8_t id, uint8_t *info) {
       break;
     case DAP_ID_SER_NUM:
 #ifdef DAP_SER_NUM
-      memcpy(info, &Serial_u16[0], 32);
-      length = 32;
+      length = USBDevice.getSerialDescriptor((uint16_t*) info);
 #endif
       break;
     case DAP_ID_FW_VER:
