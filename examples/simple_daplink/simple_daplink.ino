@@ -127,7 +127,6 @@ void loop() {
   // put your main code here, to run repeatedly:
   baud = Serial.baud();
   if (baud != old_baud) {
-    SerialTTL.end();
     SerialTTL.begin(baud);
     while (!SerialTTL);
     old_baud = baud;
