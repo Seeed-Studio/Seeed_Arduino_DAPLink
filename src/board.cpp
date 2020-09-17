@@ -102,6 +102,11 @@
 #define BOARD_ID        {1, 1, 1, 1}
 #define BOARD_SECRET    {1, 1, 1, 1, 1, 1, 1, 1, 1}
 
+#else // default for all other boards
+
+#define BOARD_ID        {1, 1, 1, 1}
+#define BOARD_SECRET    {1, 1, 1, 1, 1, 1, 1, 1, 1}
+
 #endif
 
 #if !defined(BOARD_SECRET) || !defined(BOARD_ID)

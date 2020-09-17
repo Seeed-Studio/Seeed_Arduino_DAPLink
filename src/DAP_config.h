@@ -183,6 +183,16 @@ Provides definitions about:
 #define PIN_LED_CONNECTED PIN_LED_TXL
 #define PIN_LED_RUNNING   PIN_LED_RXL
 
+#else
+
+#define PIN_SWDIO         A0
+#define PIN_SWCLK         A1
+#define PIN_TDO           A3
+#define PIN_TDI           A4
+#define PIN_nRESET        A2
+#define PIN_LED_CONNECTED LED_BUILTIN
+#define PIN_LED_RUNNING   LED_BUILTIN
+
 #endif 
 //**************************************************************************************************
 /**
