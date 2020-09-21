@@ -54,9 +54,12 @@ all_boards = [
     'adafruit:nrf52:cluenrf52840'
 ]
 
-all_sketches = list(glob.iglob('examples/**/*.ino', recursive=True))
-all_sketches.sort()
+sketch = 'examples/simple_daplink'
 
+if os.path.exists('bin'):
+    shutil.rmtree('bin')
+
+os.makedirs('bin')
 total_time = time.monotonic()
 
 print(build_separator)
@@ -64,38 +67,41 @@ print(build_format.format('Board', '\033[39mResult\033[0m', 'Time'))
 print(build_separator)
 
 for variant in all_boards:
-    for sketch in all_sketches:
-        start_time = time.monotonic()
+    start_time = time.monotonic()
 
-        # Skip if contains: ".variant.test.skip" or ".all.test.skip"
-        # Skip if not contains: ".variant.test.only" for a specific variant
-        sketchdir = os.path.dirname(sketch)
-        if os.path.exists(sketchdir + '/.all.test.skip') or os.path.exists(sketchdir + '/.' + variant + '.test.skip'):
-            success = SKIPPED
-        elif glob.glob(sketchdir+"/.*.test.only") and not os.path.exists(sketchdir + '/.' + variant + '.test.only'):
-            success = SKIPPED
+    variant_bare = variant.split(":")[2]
+    output_dir = 'build/' + variant_bare;
+
+    # Skip if contains: ".variant.test.skip" or ".all.test.skip"
+    # Skip if not contains: ".variant.test.only" for a specific variant
+    if os.path.exists(sketch + '/.all.test.skip') or os.path.exists(sketch + '/.' + variant + '.test.skip'):
+        success = SKIPPED
+    elif glob.glob(sketch+"/.*.test.only") and not os.path.exists(sketch + '/.' + variant + '.test.only'):
+        success = SKIPPED
+    else:
+        build_result = subprocess.run("arduino-cli compile --warnings default --output-dir {} --fqbn {} {}".format(output_dir, variant, sketch), shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
+        if build_result.returncode != 0:
+            exit_status = build_result.returncode
+            success = FAILED
+            fail_count += 1
         else:
-            build_result = subprocess.run("arduino-cli compile --warnings default --fqbn {} {}".format(variant, sketch), shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            success = SUCCEEDED
+            success_count += 1
+            family_id = '0xADA52840' if "adafruit:nrf52" in variant else '0x0'
+            subprocess.run("python3 tools/uf2conv.py -f {} -c -o bin/daplink-{}-v1.0.0.uf2 {}/simple_daplink.ino.hex".format(family_id, variant_bare, output_dir), shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
-            if build_result.returncode != 0:
-                exit_status = build_result.returncode
-                success = FAILED
-                fail_count += 1
-            else:
-                success = SUCCEEDED
-                success_count += 1
+    build_duration = time.monotonic() - start_time
 
-        build_duration = time.monotonic() - start_time
+    print(build_format.format(variant_bare, success, "{:5.2f}s".format(build_duration)))
 
-        print(build_format.format(variant.split(":")[2], success, "{:5.2f}s".format(build_duration)))
-
-        if success != SKIPPED:
-            if build_result.returncode != 0:
-                print(build_result.stdout.decode("utf-8"))
-                if (build_result.stderr):
-                    print(build_result.stderr.decode("utf-8"))
-        else:
-            skip_count += 1
+    if success != SKIPPED:
+        if build_result.returncode != 0:
+            print(build_result.stdout.decode("utf-8"))
+            if (build_result.stderr):
+                print(build_result.stderr.decode("utf-8"))
+    else:
+        skip_count += 1
 
 
 # Build Summary
