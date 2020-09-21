@@ -83,7 +83,7 @@ Provides definitions about:
 /// Indicate that JTAG communication mode is available at the Debug Port.
 /// This information is returned by the command \ref DAP_Info as part of <b>Capabilities</b>.
 #if !defined(DAP_JTAG)
-#define DAP_JTAG                1               ///< JTAG Mode: 1 = available, 0 = not available.
+#define DAP_JTAG                0               ///< JTAG Mode: 1 = available, 0 = not available.
 #endif
 
 /// Configure maximum number of JTAG devices on the scan chain connected to the Debug Access Port.
@@ -187,9 +187,9 @@ Provides definitions about:
 
 #define PIN_SWDIO         A0
 #define PIN_SWCLK         A1
-#define PIN_TDO           A3
-#define PIN_TDI           A4
 #define PIN_nRESET        A2
+//#define PIN_TDO           A3
+//#define PIN_TDI           A4
 #define PIN_LED_CONNECTED LED_BUILTIN
 #define PIN_LED_RUNNING   LED_BUILTIN
 
@@ -241,8 +241,14 @@ static __inline void PORT_JTAG_SETUP (void) {
   pinMode(PIN_SWCLK, OUTPUT);
   pinMode(PIN_SWDIO, OUTPUT);
   pinMode(PIN_nRESET, OUTPUT);
+
+#ifdef PIN_TDI
   pinMode(PIN_TDI, OUTPUT);
+#endif
+
+#ifdef PIN_TDO
   pinMode(PIN_TDO, INPUT);
+#endif
 }
 
 /** Setup SWD I/O pins: SWCLK, SWDIO, and nRESET.
@@ -254,8 +260,14 @@ static __inline void PORT_SWD_SETUP (void) {
   pinMode(PIN_SWCLK, OUTPUT);
   pinMode(PIN_SWDIO, OUTPUT);
   pinMode(PIN_nRESET, OUTPUT);
+
+#ifdef PIN_TDI
   pinMode(PIN_TDI, INPUT);
+#endif
+
+#ifdef PIN_TDO
   pinMode(PIN_TDO, INPUT);
+#endif
 }
 
 /** Disable JTAG/SWD I/O Pins.
@@ -265,8 +277,15 @@ Disables the DAP Hardware I/O pins which configures:
 static __inline void PORT_OFF (void) {
   pinMode(PIN_SWCLK, INPUT);
   pinMode(PIN_SWDIO, INPUT_PULLUP);
+
+#ifdef PIN_TDI
   pinMode(PIN_TDI, INPUT);
+#endif
+
+#ifdef PIN_TDO
   pinMode(PIN_TDO, INPUT);
+#endif
+
   pinMode(PIN_nRESET, INPUT_PULLUP);
 }
 
@@ -355,14 +374,20 @@ static __forceinline void     PIN_SWDIO_OUT_DISABLE (void) {
 \return Current status of the TDI DAP hardware I/O pin.
 */
 static __forceinline uint32_t PIN_TDI_IN  (void) {
+#ifdef PIN_TDI
   return (digitalRead(PIN_TDI) == HIGH) ? 1 : 0;
+#else
+  return 1;
+#endif
 }
 
 /** TDI I/O pin: Set Output.
 \param bit Output value for the TDI DAP hardware I/O pin.
 */
 static __forceinline void     PIN_TDI_OUT (uint32_t bit) {
+#ifdef PIN_TDI
   digitalWrite(PIN_TDI, (bit & 1) ? HIGH : LOW);
+#endif
 }
 
 
@@ -372,7 +397,11 @@ static __forceinline void     PIN_TDI_OUT (uint32_t bit) {
 \return Current status of the TDO DAP hardware I/O pin.
 */
 static __forceinline uint32_t PIN_TDO_IN  (void) {
+#ifdef PIN_TDO
   return (digitalRead(PIN_TDO) == HIGH) ? 1 : 0;
+#else
+  return 1;
+#endif
 }
 
 
@@ -470,8 +499,15 @@ static __inline void DAP_SETUP (void) {
   pinMode(PIN_SWCLK, INPUT);
   pinMode(PIN_SWDIO, INPUT_PULLUP);
   pinMode(PIN_nRESET, INPUT_PULLUP);
+
+#ifdef PIN_TDI
   pinMode(PIN_TDI, INPUT);
+#endif
+
+#ifdef PIN_TDO
   pinMode(PIN_TDO, INPUT);
+#endif
+
   pinMode(PIN_LED_CONNECTED, OUTPUT);
   LED_CONNECTED_OUT(0);
   pinMode(PIN_LED_RUNNING, OUTPUT);
