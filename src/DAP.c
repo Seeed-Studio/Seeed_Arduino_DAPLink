@@ -1,5 +1,7 @@
-/* CMSIS-DAP Interface Firmware
+/*
  * Copyright (c) 2013-2017 ARM Limited. All rights reserved.
+ * Copyright 2019, Cypress Semiconductor Corporation 
+ * or a subsidiary of Cypress Semiconductor Corporation.
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -31,9 +33,7 @@
 #endif
 #include "DAP_config.h"
 #include "DAP.h"
-/* #include "info.h"
-#include "dap_strings.h" */
-
+#include "dap_strings.h"
 
 #if (DAP_PACKET_SIZE < 64U)
 #error "Minimum Packet Size is 64!"
