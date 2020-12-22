@@ -25,6 +25,7 @@
 // #include "HID-Project.h"
 // #endif
 
+
 #ifndef __DAP_CONFIG_H__
 #define __DAP_CONFIG_H__
 
@@ -123,7 +124,7 @@ Provides definitions about:
 #define SWO_STREAM              0               ///< SWO Streaming Trace: 1 = available, 0 = not available.
 
 /// Clock frequency of the Test Domain Timer. Timer value is returned with \ref TIMESTAMP_GET.
-#define TIMESTAMP_CLOCK         100000000U      ///< Timestamp clock in Hz (0 = timestamps not supported).
+#define TIMESTAMP_CLOCK         48000000U      ///< Timestamp clock in Hz (0 = timestamps not supported).
 /// Debug Unit is connected to fixed Target Device.
 /// The Debug Unit may be part of an evaluation board and always connected to a fixed
 /// known device.  In this case a Device Vendor and Device Name string is stored which
@@ -202,7 +203,7 @@ Provides definitions about:
 //**************************************************************************************************
 //**
 //Faster Port Manipulation
-inline void digitalWrite_fast(int pin, bool val)
+inline void digitalWrite_fast_(int pin, bool val)
 {
    if (val)  
       PORT->Group[g_APinDescription[pin].ulPort].OUTSET.reg = (1ul << g_APinDescription[pin].ulPin);
@@ -211,7 +212,7 @@ inline void digitalWrite_fast(int pin, bool val)
 }
 
 
-inline int digitalRead_fast(int pin)
+inline int digitalRead_fast_(int pin)
 {
    return !!(PORT->Group[g_APinDescription[pin].ulPort].IN.reg & (1ul << g_APinDescription[pin].ulPin));
 }
@@ -308,7 +309,7 @@ Set the SWCLK/TCK DAP hardware I/O pin to high level.
 */
 static __forceinline void     PIN_SWCLK_TCK_SET (void) {
   if(Fast){ 
-    digitalWrite_fast(PIN_SWCLK, HIGH);}
+    digitalWrite_fast_(PIN_SWCLK, HIGH);}
   else{
     digitalWrite(PIN_SWCLK, HIGH);  }
 }
@@ -318,7 +319,7 @@ Set the SWCLK/TCK DAP hardware I/O pin to low level.
 */
 static __forceinline void     PIN_SWCLK_TCK_CLR (void) {
   if(Fast){  
-    digitalWrite_fast(PIN_SWCLK, LOW);}
+    digitalWrite_fast_(PIN_SWCLK, LOW);}
   else {
     digitalWrite(PIN_SWCLK, HIGH);}
 }
@@ -331,7 +332,7 @@ static __forceinline void     PIN_SWCLK_TCK_CLR (void) {
 */
 static __forceinline uint32_t PIN_SWDIO_TMS_IN  (void) {
   if(Fast){ 
-    return (digitalRead_fast(PIN_SWDIO) == HIGH) ? 1 : 0;}
+    return (digitalRead_fast_(PIN_SWDIO) == HIGH) ? 1 : 0;}
   else {
     return (digitalRead(PIN_SWDIO) == HIGH) ? 1 : 0;}
   
@@ -342,7 +343,7 @@ Set the SWDIO/TMS DAP hardware I/O pin to high level.
 */
 static __forceinline void     PIN_SWDIO_TMS_SET (void) {
   if(Fast){ 
-    digitalWrite_fast(PIN_SWDIO, HIGH);}
+    digitalWrite_fast_(PIN_SWDIO, HIGH);}
   else {
     digitalWrite(PIN_SWDIO, HIGH);}
   
@@ -353,7 +354,7 @@ Set the SWDIO/TMS DAP hardware I/O pin to low level.
 */
 static __forceinline void     PIN_SWDIO_TMS_CLR (void) {
   if(Fast){ 
-    digitalWrite_fast(PIN_SWDIO, LOW);}
+    digitalWrite_fast_(PIN_SWDIO, LOW);}
   else  {
     digitalWrite(PIN_SWDIO, LOW);}
 }
@@ -363,7 +364,7 @@ static __forceinline void     PIN_SWDIO_TMS_CLR (void) {
 */
 static __forceinline uint32_t PIN_SWDIO_IN      (void) {
   if(Fast){ 
-    return (digitalRead_fast(PIN_SWDIO) == HIGH) ? 1 : 0;}
+    return (digitalRead_fast_(PIN_SWDIO) == HIGH) ? 1 : 0;}
   else {
     return (digitalRead(PIN_SWDIO) == HIGH) ? 1 : 0;}
 }
@@ -373,7 +374,7 @@ static __forceinline uint32_t PIN_SWDIO_IN      (void) {
 */
 static __forceinline void     PIN_SWDIO_OUT     (uint32_t bit) {
   if(Fast){ 
-    digitalWrite_fast(PIN_SWDIO, (bit & 1) ? HIGH : LOW);}
+    digitalWrite_fast_(PIN_SWDIO, (bit & 1) ? HIGH : LOW);}
   else {
     digitalWrite(PIN_SWDIO, (bit & 1) ? HIGH : LOW);}
 }
@@ -402,7 +403,7 @@ static __forceinline void     PIN_SWDIO_OUT_DISABLE (void) {
 */
 static __forceinline uint32_t PIN_TDI_IN  (void) {
 if(Fast){ 
-  return (digitalRead_fast(PIN_TDI) == HIGH) ? 1 : 0;}
+  return (digitalRead_fast_(PIN_TDI) == HIGH) ? 1 : 0;}
 else{
   return (digitalRead(PIN_TDI) == HIGH) ? 1 : 0;}
 }
@@ -412,7 +413,7 @@ else{
 */
 static __forceinline void     PIN_TDI_OUT (uint32_t bit) {
 if(Fast){   
-  digitalWrite_fast(PIN_TDI, (bit & 1) ? HIGH : LOW);}
+  digitalWrite_fast_(PIN_TDI, (bit & 1) ? HIGH : LOW);}
 else{
   digitalWrite(PIN_TDI, (bit & 1) ? HIGH : LOW);}
 }
@@ -425,7 +426,7 @@ else{
 */
 static __forceinline uint32_t PIN_TDO_IN  (void) {
 if(Fast){   
-  return (digitalRead_fast(PIN_TDO) == HIGH) ? 1 : 0;}
+  return (digitalRead_fast_(PIN_TDO) == HIGH) ? 1 : 0;}
 else{
   return (digitalRead(PIN_TDO) == HIGH) ? 1 : 0;}
 }
@@ -456,7 +457,7 @@ static __forceinline void     PIN_nTRST_OUT  (uint32_t bit) {
 */
 static __forceinline uint32_t PIN_nRESET_IN  (void) {
 if(Fast){   
-  return (digitalRead_fast(PIN_nRESET) == HIGH) ? 1 : 0;}
+  return (digitalRead_fast_(PIN_nRESET) == HIGH) ? 1 : 0;}
 else{
   return (digitalRead(PIN_nRESET) == HIGH) ? 1 : 0;}
 }
@@ -468,7 +469,7 @@ else{
 */
 static __forceinline void     PIN_nRESET_OUT (uint32_t bit) {
 if(Fast){   
-  digitalWrite_fast(PIN_nRESET, (bit & 1) ? HIGH : LOW);}
+  digitalWrite_fast_(PIN_nRESET, (bit & 1) ? HIGH : LOW);}
 else{
   digitalWrite(PIN_nRESET, (bit & 1) ? HIGH : LOW);}
 }
@@ -496,7 +497,7 @@ It is recommended to provide the following LEDs for status indication:
 */
 static __inline void LED_CONNECTED_OUT (uint32_t bit) {
 if(Fast){   
-  digitalWrite_fast(PIN_LED_CONNECTED, bit ? HIGH : LOW);}
+  digitalWrite_fast_(PIN_LED_CONNECTED, bit ? HIGH : LOW);}
 else{
   digitalWrite(PIN_LED_CONNECTED, bit ? HIGH : LOW);}
 }
@@ -508,7 +509,7 @@ else{
 */
 static __inline void LED_RUNNING_OUT (uint32_t bit) {
 if(Fast){   
-  digitalWrite_fast(PIN_LED_RUNNING, bit ? HIGH : LOW);}
+  digitalWrite_fast_(PIN_LED_RUNNING, bit ? HIGH : LOW);}
 else{
   digitalWrite(PIN_LED_RUNNING, bit ? HIGH : LOW);}
 }
@@ -531,7 +532,14 @@ default, the DWT timer is used.  The frequency of this timer is configured with 
 \return Current timestamp value.
 */
 __STATIC_INLINE uint32_t TIMESTAMP_GET (void) {
-  return (DWT->CYCCNT) / (CPU_CLOCK / TIMESTAMP_CLOCK);
+  uint32_t ticks = SysTick->VAL;
+  	// Configure SysTick to trigger every millisecond using the CPU Clock
+	SysTick->CTRL = 0;					    // Disable SysTick
+	SysTick->LOAD = 0xFFFFFF;				// Set reload register for MAX Value
+	SysTick->VAL = 0;					      // Reset the SysTick counter value
+	SysTick->CTRL = 0x00000005;			// Enable SysTick,No Interrupt, Use CPU Clock
+  return(ticks);
+  //return (DWT->CYCCNT) / (CPU_CLOCK / TIMESTAMP_CLOCK);
 }
 
 ///@}
@@ -580,4 +588,3 @@ static __inline uint32_t RESET_TARGET (void) {
 
 
 #endif /* __DAP_CONFIG_H__ */
-

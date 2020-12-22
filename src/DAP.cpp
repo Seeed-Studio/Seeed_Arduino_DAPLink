@@ -33,7 +33,6 @@
 #endif
 #include "DAP_config.h"
 #include "DAP.h"
-#include "dap_strings.h"
 
 #if (DAP_PACKET_SIZE < 64U)
 #error "Minimum Packet Size is 64!"
@@ -62,13 +61,21 @@
 volatile uint8_t    DAP_TransferAbort;  // Transfer Abort Flag
 
 
-// static const char DAP_FW_Ver [] = DAP_FW_VER;
+#ifdef DAP_VENDOR
+const char DAP_Vendor [] = DAP_VENDOR;
+#endif
+#ifdef DAP_PRODUCT
+const char DAP_Product[] = DAP_PRODUCT;
+#endif
+#ifdef DAP_SER_NUM
+const char DAP_SerNum [] = DAP_SER_NUM;
+#endif
+const char DAP_FW_Ver [] = DAP_FW_VER;
 
 #if TARGET_DEVICE_FIXED
-static const char TargetDeviceVendor [] = TARGET_DEVICE_VENDOR;
-static const char TargetDeviceName   [] = TARGET_DEVICE_NAME;
+const char TargetDeviceVendor [] = TARGET_DEVICE_VENDOR;
+const char TargetDeviceName   [] = TARGET_DEVICE_NAME;
 #endif
-
 
 // Get DAP Information
 //   id:      info identifier
@@ -79,23 +86,26 @@ static uint8_t DAP_Info(uint8_t id, uint8_t *info) {
 
   switch (id) {
     case DAP_ID_VENDOR:
-      length = DAP_GetVendorString((char *)info);
+#ifdef DAP_VENDOR
+      memcpy(info, DAP_Vendor, sizeof(DAP_Vendor));
+      length = (uint8_t)sizeof(DAP_Vendor);
+#endif
       break;
     case DAP_ID_PRODUCT:
-      length = DAP_GetProductString((char *)info);
+#ifdef DAP_PRODUCT
+      memcpy(info, DAP_Product, sizeof(DAP_Product));
+      length = (uint8_t)sizeof(DAP_Product);
+#endif
       break;
     case DAP_ID_SER_NUM:
-      length = DAP_GetSerNumString((char *)info);
+#ifdef DAP_SER_NUM
+      length = USBDevice.getSerialDescriptor((uint16_t*) info);
+#endif
       break;
-    case DAP_ID_FW_VER: {
-// --- begin DAPLink change ---
-      length = DAP_GetFirmwareVersionString((char *)info);
-// Original:
-//       memcpy(info, DAP_FW_Ver, sizeof(DAP_FW_Ver));
-//       length = (uint8_t)sizeof(DAP_FW_Ver);
-// --- end DAPLink change ---
+    case DAP_ID_FW_VER:
+      memcpy(info, DAP_FW_Ver, sizeof(DAP_FW_Ver));
+      length = (uint8_t)sizeof(DAP_FW_Ver);
       break;
-    }
     case DAP_ID_DEVICE_VENDOR:
 #if TARGET_DEVICE_FIXED
       length = (uint8_t)sizeof(TargetDeviceVendor);
