@@ -1,13 +1,3 @@
-#include <Arduino.h>
-#include "usb_desc.h"
-// #ifdef TEENSYDUINO
-// #define TEENSY_RAWHID
-// #include "usb_desc.h"
-// #else
-// #define HIDPROJECT_RAWHID
-// #include "HID-Project.h"
-// #endif
-
 /* CMSIS-DAP ported to run on the Arduino Micro
  * Copyright (C) 2016 Phillip Pearson <pp@myelin.co.nz>
  *
@@ -27,6 +17,15 @@
  * limitations under the License.
  */
 
+// #ifdef TEENSYDUINO
+// #define TEENSY_RAWHID
+// #include "usb_desc.h"
+// #else
+// #define HIDPROJECT_RAWHID
+// #include "HID-Project.h"
+// #endif
+
+
 #ifndef __DAP_CONFIG_H__
 #define __DAP_CONFIG_H__
 
@@ -37,11 +36,8 @@
 #define U64 uint64_t
 #define os_dly_wait delayMicroseconds
 
-// #define DAP_VENDOR "Myelin"
 #define DAP_VENDOR "Seeed"
-//#define DAP_PRODUCT "Arduino CMSIS-DAP"
 #define DAP_PRODUCT "Seeed CMSIS-DAP"
-// #define DAP_SER_NUM "1234"
 #define DAP_SER_NUM "1234"
 
 //**************************************************************************************************
@@ -57,7 +53,7 @@ Provides definitions about:
 */
 
 #include <Arduino.h>                             // Debug Unit Cortex-M Processor Header File
-
+#include "usb_desc.h"
 /// Processor Clock of the Cortex-M MCU used in the Debug Unit.
 /// This value is used to calculate the SWD/JTAG clock speed.
 #define CPU_CLOCK               F_CPU        ///< Specifies the CPU Clock in Hz
@@ -68,7 +64,7 @@ Provides definitions about:
 /// requrie 2 processor cycles for a I/O Port Write operation.  If the Debug Unit uses
 /// a Cortex-M0+ processor with high-speed peripheral I/O only 1 processor cycle might be
 /// requrired.
-#define IO_PORT_WRITE_CYCLES    2               ///< I/O Cycles: 2=default, 1=Cortex-M0+ fast I/0
+#define IO_PORT_WRITE_CYCLES    1               ///< I/O Cycles: 2=default, 1=Cortex-M0+ fast I/0
 
 #if !defined(DAP_SERIAL_LOG)
 #define DAP_SERIAL_LOG          1
@@ -124,6 +120,11 @@ Provides definitions about:
 /// SWO Trace Buffer Size.
 #define SWO_BUFFER_SIZE         4096U           ///< SWO Trace Buffer Size in bytes (must be 2^n)
 
+/// SWO Streaming Trace.
+#define SWO_STREAM              0               ///< SWO Streaming Trace: 1 = available, 0 = not available.
+
+/// Clock frequency of the Test Domain Timer. Timer value is returned with \ref TIMESTAMP_GET.
+#define TIMESTAMP_CLOCK         48000000U      ///< Timestamp clock in Hz (0 = timestamps not supported).
 /// Debug Unit is connected to fixed Target Device.
 /// The Debug Unit may be part of an evaluation board and always connected to a fixed
 /// known device.  In this case a Device Vendor and Device Name string is stored which
@@ -173,6 +174,8 @@ Provides definitions about:
 #define PIN_nRESET        D4
 #define PIN_LED_CONNECTED PIN_LED_TXL
 #define PIN_LED_RUNNING   PIN_LED_RXL
+#define Fast              1
+
 #elif ARDUINO_SEEED_XIAO_M0
 
 #define PIN_SWDIO         A9
@@ -182,6 +185,7 @@ Provides definitions about:
 #define PIN_nRESET        A8
 #define PIN_LED_CONNECTED PIN_LED_TXL
 #define PIN_LED_RUNNING   PIN_LED_RXL
+#define Fast              1
 
 #else
 
@@ -192,8 +196,28 @@ Provides definitions about:
 #define PIN_nRESET        A2
 #define PIN_LED_CONNECTED LED_BUILTIN
 #define PIN_LED_RUNNING   LED_BUILTIN
+#define Fast              0
 
 #endif 
+
+//**************************************************************************************************
+//**
+//Faster Port Manipulation
+inline void digitalWrite_fast_(int pin, bool val)
+{
+   if (val)  
+      PORT->Group[g_APinDescription[pin].ulPort].OUTSET.reg = (1ul << g_APinDescription[pin].ulPin);
+   else    
+      PORT->Group[g_APinDescription[pin].ulPort].OUTCLR.reg = (1ul << g_APinDescription[pin].ulPin);
+}
+
+
+inline int digitalRead_fast_(int pin)
+{
+   return !!(PORT->Group[g_APinDescription[pin].ulPort].IN.reg & (1ul << g_APinDescription[pin].ulPin));
+}
+//**
+//**************************************************************************************************
 //**************************************************************************************************
 /**
 \defgroup DAP_Config_PortIO_gr CMSIS-DAP Hardware I/O Pin Access
@@ -284,14 +308,20 @@ static __forceinline uint32_t PIN_SWCLK_TCK_IN  (void) {
 Set the SWCLK/TCK DAP hardware I/O pin to high level.
 */
 static __forceinline void     PIN_SWCLK_TCK_SET (void) {
-  digitalWrite(PIN_SWCLK, HIGH);
+  if(Fast){ 
+    digitalWrite_fast_(PIN_SWCLK, HIGH);}
+  else{
+    digitalWrite(PIN_SWCLK, HIGH);  }
 }
 
 /** SWCLK/TCK I/O pin: Set Output to Low.
 Set the SWCLK/TCK DAP hardware I/O pin to low level.
 */
 static __forceinline void     PIN_SWCLK_TCK_CLR (void) {
-  digitalWrite(PIN_SWCLK, LOW);
+  if(Fast){  
+    digitalWrite_fast_(PIN_SWCLK, LOW);}
+  else {
+    digitalWrite(PIN_SWCLK, HIGH);}
 }
 
 
@@ -301,35 +331,52 @@ static __forceinline void     PIN_SWCLK_TCK_CLR (void) {
 \return Current status of the SWDIO/TMS DAP hardware I/O pin.
 */
 static __forceinline uint32_t PIN_SWDIO_TMS_IN  (void) {
-  return (digitalRead(PIN_SWDIO) == HIGH) ? 1 : 0;
+  if(Fast){ 
+    return (digitalRead_fast_(PIN_SWDIO) == HIGH) ? 1 : 0;}
+  else {
+    return (digitalRead(PIN_SWDIO) == HIGH) ? 1 : 0;}
+  
 }
 
 /** SWDIO/TMS I/O pin: Set Output to High.
 Set the SWDIO/TMS DAP hardware I/O pin to high level.
 */
 static __forceinline void     PIN_SWDIO_TMS_SET (void) {
-  digitalWrite(PIN_SWDIO, HIGH);
+  if(Fast){ 
+    digitalWrite_fast_(PIN_SWDIO, HIGH);}
+  else {
+    digitalWrite(PIN_SWDIO, HIGH);}
+  
 }
 
 /** SWDIO/TMS I/O pin: Set Output to Low.
 Set the SWDIO/TMS DAP hardware I/O pin to low level.
 */
 static __forceinline void     PIN_SWDIO_TMS_CLR (void) {
-  digitalWrite(PIN_SWDIO, LOW);
+  if(Fast){ 
+    digitalWrite_fast_(PIN_SWDIO, LOW);}
+  else  {
+    digitalWrite(PIN_SWDIO, LOW);}
 }
 
 /** SWDIO I/O pin: Get Input (used in SWD mode only).
 \return Current status of the SWDIO DAP hardware I/O pin.
 */
 static __forceinline uint32_t PIN_SWDIO_IN      (void) {
-  return (digitalRead(PIN_SWDIO) == HIGH) ? 1 : 0;
+  if(Fast){ 
+    return (digitalRead_fast_(PIN_SWDIO) == HIGH) ? 1 : 0;}
+  else {
+    return (digitalRead(PIN_SWDIO) == HIGH) ? 1 : 0;}
 }
 
 /** SWDIO I/O pin: Set Output (used in SWD mode only).
 \param bit Output value for the SWDIO DAP hardware I/O pin.
 */
 static __forceinline void     PIN_SWDIO_OUT     (uint32_t bit) {
-  digitalWrite(PIN_SWDIO, (bit & 1) ? HIGH : LOW);
+  if(Fast){ 
+    digitalWrite_fast_(PIN_SWDIO, (bit & 1) ? HIGH : LOW);}
+  else {
+    digitalWrite(PIN_SWDIO, (bit & 1) ? HIGH : LOW);}
 }
 
 /** SWDIO I/O pin: Switch to Output mode (used in SWD mode only).
@@ -355,14 +402,20 @@ static __forceinline void     PIN_SWDIO_OUT_DISABLE (void) {
 \return Current status of the TDI DAP hardware I/O pin.
 */
 static __forceinline uint32_t PIN_TDI_IN  (void) {
-  return (digitalRead(PIN_TDI) == HIGH) ? 1 : 0;
+if(Fast){ 
+  return (digitalRead_fast_(PIN_TDI) == HIGH) ? 1 : 0;}
+else{
+  return (digitalRead(PIN_TDI) == HIGH) ? 1 : 0;}
 }
 
 /** TDI I/O pin: Set Output.
 \param bit Output value for the TDI DAP hardware I/O pin.
 */
 static __forceinline void     PIN_TDI_OUT (uint32_t bit) {
-  digitalWrite(PIN_TDI, (bit & 1) ? HIGH : LOW);
+if(Fast){   
+  digitalWrite_fast_(PIN_TDI, (bit & 1) ? HIGH : LOW);}
+else{
+  digitalWrite(PIN_TDI, (bit & 1) ? HIGH : LOW);}
 }
 
 
@@ -372,7 +425,10 @@ static __forceinline void     PIN_TDI_OUT (uint32_t bit) {
 \return Current status of the TDO DAP hardware I/O pin.
 */
 static __forceinline uint32_t PIN_TDO_IN  (void) {
-  return (digitalRead(PIN_TDO) == HIGH) ? 1 : 0;
+if(Fast){   
+  return (digitalRead_fast_(PIN_TDO) == HIGH) ? 1 : 0;}
+else{
+  return (digitalRead(PIN_TDO) == HIGH) ? 1 : 0;}
 }
 
 
@@ -400,7 +456,10 @@ static __forceinline void     PIN_nTRST_OUT  (uint32_t bit) {
 \return Current status of the nRESET DAP hardware I/O pin.
 */
 static __forceinline uint32_t PIN_nRESET_IN  (void) {
-  return (digitalRead(PIN_nRESET) == HIGH) ? 1 : 0;
+if(Fast){   
+  return (digitalRead_fast_(PIN_nRESET) == HIGH) ? 1 : 0;}
+else{
+  return (digitalRead(PIN_nRESET) == HIGH) ? 1 : 0;}
 }
 
 /** nRESET I/O pin: Set Output.
@@ -409,7 +468,10 @@ static __forceinline uint32_t PIN_nRESET_IN  (void) {
            - 1: release device hardware reset.
 */
 static __forceinline void     PIN_nRESET_OUT (uint32_t bit) {
-  digitalWrite(PIN_nRESET, (bit & 1) ? HIGH : LOW);
+if(Fast){   
+  digitalWrite_fast_(PIN_nRESET, (bit & 1) ? HIGH : LOW);}
+else{
+  digitalWrite(PIN_nRESET, (bit & 1) ? HIGH : LOW);}
 }
 
 ///@}
@@ -434,7 +496,10 @@ It is recommended to provide the following LEDs for status indication:
            - 0: Connect LED OFF: debugger is not connected to CMSIS-DAP Debug Unit.
 */
 static __inline void LED_CONNECTED_OUT (uint32_t bit) {
-  digitalWrite(PIN_LED_CONNECTED, bit ? HIGH : LOW);
+if(Fast){   
+  digitalWrite_fast_(PIN_LED_CONNECTED, bit ? HIGH : LOW);}
+else{
+  digitalWrite(PIN_LED_CONNECTED, bit ? HIGH : LOW);}
 }
 
 /** Debug Unit: Set status Target Running LED.
@@ -443,11 +508,41 @@ static __inline void LED_CONNECTED_OUT (uint32_t bit) {
            - 0: Target Running LED OFF: program execution in target stopped.
 */
 static __inline void LED_RUNNING_OUT (uint32_t bit) {
-  digitalWrite(PIN_LED_RUNNING, bit ? HIGH : LOW);
+if(Fast){   
+  digitalWrite_fast_(PIN_LED_RUNNING, bit ? HIGH : LOW);}
+else{
+  digitalWrite(PIN_LED_RUNNING, bit ? HIGH : LOW);}
 }
 
 ///@}
 
+//**************************************************************************************************
+/**
+\defgroup DAP_Config_Timestamp_gr CMSIS-DAP Timestamp
+\ingroup DAP_ConfigIO_gr
+@{
+Access function for Test Domain Timer.
+
+The value of the Test Domain Timer in the Debug Unit is returned by the function \ref TIMESTAMP_GET. By
+default, the DWT timer is used.  The frequency of this timer is configured with \ref TIMESTAMP_CLOCK.
+
+*/
+
+/** Get timestamp of Test Domain Timer.
+\return Current timestamp value.
+*/
+__STATIC_INLINE uint32_t TIMESTAMP_GET (void) {
+  uint32_t ticks = SysTick->VAL;
+  	// Configure SysTick to trigger every millisecond using the CPU Clock
+	SysTick->CTRL = 0;					    // Disable SysTick
+	SysTick->LOAD = 0xFFFFFF;				// Set reload register for MAX Value
+	SysTick->VAL = 0;					      // Reset the SysTick counter value
+	SysTick->CTRL = 0x00000005;			// Enable SysTick,No Interrupt, Use CPU Clock
+  return(ticks);
+  //return (DWT->CYCCNT) / (CPU_CLOCK / TIMESTAMP_CLOCK);
+}
+
+///@}
 
 //**************************************************************************************************
 /**
@@ -493,4 +588,3 @@ static __inline uint32_t RESET_TARGET (void) {
 
 
 #endif /* __DAP_CONFIG_H__ */
-
