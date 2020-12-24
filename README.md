@@ -1,24 +1,12 @@
 # Seeed_Arduino_DAPLink
-An Arduino Library for Seeed Arduino DAPLink.
+
+Most of Seeed & Adafruit boards Seeeduino M0/M4, featuring M0, M4 and nRF52840 are able to run the daplink sketch. It allows us to flash/burn bootloader of any ARM Cortex-M MCU (M0, M4, nRF52832, nRF52840 etc ..) and step debugging with gdb and/or supported IDE such as eclipse,  Keil, IAR. For your convenience, a precompiled daplink firmware in uf2 format for specific board can be found at wiki page
 
 
-## Get Started
-1. Download the Adafruit TinyUSB Library from: [Adafruit_TinyUSB_Arduino](https://github.com/adafruit/Adafruit_TinyUSB_Arduino)
-
-2. Arduino IDE tool-->Select the board: Seeeduino samd Serial board.
-
-3. Arduino IDE tool-->Select the USB Stack: TinyUSB.
-
-4. Arduino IDE tool-->Select the COM port.
-
+[**More detailed documentation**](https://wiki.seeedstudio.com/Arduino-DAPLink/)
 
 ## Contributing
 Contributing to this software is warmly welcomed. You can do this basically by<br>
 [forking](https://help.github.com/articles/fork-a-repo), committing modifications and then [pulling requests](https://help.github.com/articles/using-pull-requests) (follow the links above<br>
 for operating guide). Adding change log and your contact into file header is encouraged.<br>
 Thanks for your contribution.
-
-Seeed Studio is an open hardware facilitation company based in Shenzhen, China. <br>
-Benefiting from local manufacture power and convenient global logistic system, <br>
-we integrate resources to serve new era of innovation. Seeed also works with <br>
-global distributors and partners to push open hardware movement.<br>
