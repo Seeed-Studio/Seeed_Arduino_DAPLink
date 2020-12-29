@@ -200,22 +200,147 @@ Provides definitions about:
 
 #endif 
 
-//**************************************************************************************************
-//**
-//Faster Port Manipulation
-inline void digitalWrite_fast_(int pin, bool val)
-{
-   if (val)  
-      PORT->Group[g_APinDescription[pin].ulPort].OUTSET.reg = (1ul << g_APinDescription[pin].ulPin);
-   else    
-      PORT->Group[g_APinDescription[pin].ulPort].OUTCLR.reg = (1ul << g_APinDescription[pin].ulPin);
-}
+#if Fast
 
-
-inline int digitalRead_fast_(int pin)
+struct PortPin
 {
-   return !!(PORT->Group[g_APinDescription[pin].ulPort].IN.reg & (1ul << g_APinDescription[pin].ulPin));
-}
+  int pin;
+  int mode;
+  PortGroup* group;
+  uint32_t bit;
+  PortPin(int pin, int mode) : pin(pin), mode(mode) {
+    this->group = &PORT->Group[g_APinDescription[pin].ulPort];
+    this->bit = (1ul << g_APinDescription[pin].ulPin);
+    pinMode(mode);
+  }
+  void setPin(int new_pin) {
+    auto output = this->readOutput();
+    this->pin = new_pin;
+    this->group = &PORT->Group[g_APinDescription[new_pin].ulPort];
+    this->bit = (1ul << g_APinDescription[new_pin].ulPin);
+    this->write(output);
+    this->pinMode(this->mode);
+  }
+  void pinMode(int mode) {
+    ::pinMode(this->pin, mode);
+    this->mode = mode;
+  }
+  void enableOutput() {
+    this->pinMode(OUTPUT);
+  }
+  void disableOutput() {
+    this->pinMode(INPUT);
+  }
+  void enablePullUp() {
+    this->pinMode(INPUT_PULLUP);
+  }
+  void set() {
+    this->group->OUTSET.reg = this->bit;
+  }
+  void clear() {
+    this->group->OUTCLR.reg = this->bit;
+  }
+  bool read() {
+    return this->group->IN.reg & this->bit;
+  }
+  bool readOutput() {
+    return this->group->OUT.reg & this->bit;
+  }
+  void write(bool value) {
+    if( value ) {
+      this->set();
+    }
+    else {
+      this->clear();
+    }
+  }
+};
+
+#else
+
+struct PortPin
+{
+  int pin;
+  int mode;
+  bool output;
+
+  PortPin(int pin, int mode) : pin(pin), mode(mode), output(false) {
+    pinMode(mode);
+  }
+  void setPin(int new_pin) {
+    this->pin = new_pin;
+    this->write(this->output);
+    this->pinMode(this->mode);
+  }
+  void pinMode(int mode) {
+    ::pinMode(this->pin, mode);
+    this->mode = mode;
+  }
+  void enableOutput() {
+    this->pinMode(OUTPUT);
+  }
+  void disableOutput() {
+    this->pinMode(INPUT);
+  }
+  void enablePullUp() {
+    this->pinMode(INPUT_PULLUP);
+  }
+  void set() {
+    this->output = true;
+    digitalWrite(this->pin, true);
+  }
+  void clear() {
+    this->output = false;
+    digitalWrite(this->pin, false);
+  }
+  bool read() {
+    return digitalRead(this->pin) != 0;
+  }
+  bool readOutput() {
+    return this->output;
+  }
+  void write(bool value) {
+    this->output = value;
+    digitalWrite(this->pin, value);
+  }
+};
+
+#endif
+
+struct DummyPin
+{
+  bool output;
+  DummyPin(int pin, int mode) : output(false) {}
+  void setPin(int new_pin) {}
+  void pinMode(int mode) {}
+  void enableOutput() {}
+  void disableOutput() {}
+  void enablePullUp() {}
+  void set() { this->output = true; }
+  void clear() { this->output = false; }
+  bool read() { return this->output; }
+  bool readOutput() { return this->output; }
+  void write(bool value) { this->output = value; }
+};
+
+#ifdef PIN_LED_CONNECTED 
+typedef PortPin LED_CONNECTEDPinType;
+#else
+typedef DummyPin LED_CONNECTEDPinType;
+#endif
+#ifdef PIN_LED_RUNNING 
+typedef PortPin LED_RUNNINGPinType;
+#else
+typedef DummyPin LED_RUNNINGPinType;
+#endif
+
+extern PortPin SWDIOPin;
+extern PortPin SWCLKPin;
+extern PortPin TDIPin;
+extern PortPin TDOPin;
+extern PortPin nRESETPin;
+extern LED_CONNECTEDPinType LED_CONNECTEDPin;
+extern LED_RUNNINGPinType LED_RUNNINGPin;
 //**
 //**************************************************************************************************
 //**************************************************************************************************
@@ -262,11 +387,11 @@ Configures the DAP Hardware I/O pins for JTAG mode:
  - TDO to input mode.
 */
 static __inline void PORT_JTAG_SETUP (void) {
-  pinMode(PIN_SWCLK, OUTPUT);
-  pinMode(PIN_SWDIO, OUTPUT);
-  pinMode(PIN_nRESET, OUTPUT);
-  pinMode(PIN_TDI, OUTPUT);
-  pinMode(PIN_TDO, INPUT);
+  SWCLKPin.pinMode(OUTPUT);
+  SWDIOPin.pinMode(OUTPUT);
+  nRESETPin.pinMode(OUTPUT);
+  TDIPin.pinMode(OUTPUT);
+  TDOPin.pinMode(INPUT);
 }
 
 /** Setup SWD I/O pins: SWCLK, SWDIO, and nRESET.
@@ -275,11 +400,11 @@ Configures the DAP Hardware I/O pins for Serial Wire Debug (SWD) mode:
  - TDI, TMS, nTRST to HighZ mode (pins are unused in SWD mode).
 */
 static __inline void PORT_SWD_SETUP (void) {
-  pinMode(PIN_SWCLK, OUTPUT);
-  pinMode(PIN_SWDIO, OUTPUT);
-  pinMode(PIN_nRESET, OUTPUT);
-  pinMode(PIN_TDI, INPUT);
-  pinMode(PIN_TDO, INPUT);
+  SWCLKPin.pinMode(OUTPUT);
+  SWDIOPin.pinMode(OUTPUT);
+  nRESETPin.pinMode(OUTPUT);
+  TDIPin.pinMode(INPUT);
+  TDOPin.pinMode(INPUT);
 }
 
 /** Disable JTAG/SWD I/O Pins.
@@ -287,11 +412,11 @@ Disables the DAP Hardware I/O pins which configures:
  - TCK/SWCLK, TMS/SWDIO, TDI, TDO, nTRST, nRESET to High-Z mode.
 */
 static __inline void PORT_OFF (void) {
-  pinMode(PIN_SWCLK, INPUT);
-  pinMode(PIN_SWDIO, INPUT_PULLUP);
-  pinMode(PIN_TDI, INPUT);
-  pinMode(PIN_TDO, INPUT);
-  pinMode(PIN_nRESET, INPUT_PULLUP);
+  SWCLKPin.pinMode(INPUT);
+  SWDIOPin.pinMode(INPUT_PULLUP);
+  nRESETPin.pinMode(INPUT);
+  TDIPin.pinMode(INPUT_PULLUP);
+  TDOPin.pinMode(INPUT);
 }
 
 
@@ -308,20 +433,14 @@ static __forceinline uint32_t PIN_SWCLK_TCK_IN  (void) {
 Set the SWCLK/TCK DAP hardware I/O pin to high level.
 */
 static __forceinline void     PIN_SWCLK_TCK_SET (void) {
-  if(Fast){ 
-    digitalWrite_fast_(PIN_SWCLK, HIGH);}
-  else{
-    digitalWrite(PIN_SWCLK, HIGH);  }
+  SWCLKPin.set();
 }
 
 /** SWCLK/TCK I/O pin: Set Output to Low.
 Set the SWCLK/TCK DAP hardware I/O pin to low level.
 */
 static __forceinline void     PIN_SWCLK_TCK_CLR (void) {
-  if(Fast){  
-    digitalWrite_fast_(PIN_SWCLK, LOW);}
-  else {
-    digitalWrite(PIN_SWCLK, HIGH);}
+  SWCLKPin.clear();
 }
 
 
@@ -331,52 +450,35 @@ static __forceinline void     PIN_SWCLK_TCK_CLR (void) {
 \return Current status of the SWDIO/TMS DAP hardware I/O pin.
 */
 static __forceinline uint32_t PIN_SWDIO_TMS_IN  (void) {
-  if(Fast){ 
-    return (digitalRead_fast_(PIN_SWDIO) == HIGH) ? 1 : 0;}
-  else {
-    return (digitalRead(PIN_SWDIO) == HIGH) ? 1 : 0;}
-  
+  return SWDIOPin.read() ? 1 : 0;
 }
 
 /** SWDIO/TMS I/O pin: Set Output to High.
 Set the SWDIO/TMS DAP hardware I/O pin to high level.
 */
 static __forceinline void     PIN_SWDIO_TMS_SET (void) {
-  if(Fast){ 
-    digitalWrite_fast_(PIN_SWDIO, HIGH);}
-  else {
-    digitalWrite(PIN_SWDIO, HIGH);}
-  
+  SWDIOPin.set();
 }
 
 /** SWDIO/TMS I/O pin: Set Output to Low.
 Set the SWDIO/TMS DAP hardware I/O pin to low level.
 */
 static __forceinline void     PIN_SWDIO_TMS_CLR (void) {
-  if(Fast){ 
-    digitalWrite_fast_(PIN_SWDIO, LOW);}
-  else  {
-    digitalWrite(PIN_SWDIO, LOW);}
+  SWDIOPin.clear();
 }
 
 /** SWDIO I/O pin: Get Input (used in SWD mode only).
 \return Current status of the SWDIO DAP hardware I/O pin.
 */
 static __forceinline uint32_t PIN_SWDIO_IN      (void) {
-  if(Fast){ 
-    return (digitalRead_fast_(PIN_SWDIO) == HIGH) ? 1 : 0;}
-  else {
-    return (digitalRead(PIN_SWDIO) == HIGH) ? 1 : 0;}
+  return SWDIOPin.read() ? 1 : 0;
 }
 
 /** SWDIO I/O pin: Set Output (used in SWD mode only).
 \param bit Output value for the SWDIO DAP hardware I/O pin.
 */
 static __forceinline void     PIN_SWDIO_OUT     (uint32_t bit) {
-  if(Fast){ 
-    digitalWrite_fast_(PIN_SWDIO, (bit & 1) ? HIGH : LOW);}
-  else {
-    digitalWrite(PIN_SWDIO, (bit & 1) ? HIGH : LOW);}
+  SWDIOPin.write(bit & 1);
 }
 
 /** SWDIO I/O pin: Switch to Output mode (used in SWD mode only).
@@ -384,7 +486,7 @@ Configure the SWDIO DAP hardware I/O pin to output mode. This function is
 called prior \ref PIN_SWDIO_OUT function calls.
 */
 static __forceinline void     PIN_SWDIO_OUT_ENABLE  (void) {
-  pinMode(PIN_SWDIO, OUTPUT);
+  SWDIOPin.enableOutput();
 }
 
 /** SWDIO I/O pin: Switch to Input mode (used in SWD mode only).
@@ -392,7 +494,7 @@ Configure the SWDIO DAP hardware I/O pin to input mode. This function is
 called prior \ref PIN_SWDIO_IN function calls.
 */
 static __forceinline void     PIN_SWDIO_OUT_DISABLE (void) {
-  pinMode(PIN_SWDIO, INPUT_PULLUP);
+  SWDIOPin.pinMode(INPUT_PULLUP);
 }
 
 
@@ -402,20 +504,14 @@ static __forceinline void     PIN_SWDIO_OUT_DISABLE (void) {
 \return Current status of the TDI DAP hardware I/O pin.
 */
 static __forceinline uint32_t PIN_TDI_IN  (void) {
-if(Fast){ 
-  return (digitalRead_fast_(PIN_TDI) == HIGH) ? 1 : 0;}
-else{
-  return (digitalRead(PIN_TDI) == HIGH) ? 1 : 0;}
+  return TDIPin.read() ? 1 : 0;
 }
 
 /** TDI I/O pin: Set Output.
 \param bit Output value for the TDI DAP hardware I/O pin.
 */
 static __forceinline void     PIN_TDI_OUT (uint32_t bit) {
-if(Fast){   
-  digitalWrite_fast_(PIN_TDI, (bit & 1) ? HIGH : LOW);}
-else{
-  digitalWrite(PIN_TDI, (bit & 1) ? HIGH : LOW);}
+  TDIPin.write(bit & 1);
 }
 
 
@@ -425,10 +521,7 @@ else{
 \return Current status of the TDO DAP hardware I/O pin.
 */
 static __forceinline uint32_t PIN_TDO_IN  (void) {
-if(Fast){   
-  return (digitalRead_fast_(PIN_TDO) == HIGH) ? 1 : 0;}
-else{
-  return (digitalRead(PIN_TDO) == HIGH) ? 1 : 0;}
+  return TDOPin.read() ? 1 : 0;
 }
 
 
@@ -456,10 +549,7 @@ static __forceinline void     PIN_nTRST_OUT  (uint32_t bit) {
 \return Current status of the nRESET DAP hardware I/O pin.
 */
 static __forceinline uint32_t PIN_nRESET_IN  (void) {
-if(Fast){   
-  return (digitalRead_fast_(PIN_nRESET) == HIGH) ? 1 : 0;}
-else{
-  return (digitalRead(PIN_nRESET) == HIGH) ? 1 : 0;}
+  return nRESETPin.read() ? 1 : 0;
 }
 
 /** nRESET I/O pin: Set Output.
@@ -468,10 +558,7 @@ else{
            - 1: release device hardware reset.
 */
 static __forceinline void     PIN_nRESET_OUT (uint32_t bit) {
-if(Fast){   
-  digitalWrite_fast_(PIN_nRESET, (bit & 1) ? HIGH : LOW);}
-else{
-  digitalWrite(PIN_nRESET, (bit & 1) ? HIGH : LOW);}
+  nRESETPin.write(bit & 1);
 }
 
 ///@}
@@ -496,10 +583,7 @@ It is recommended to provide the following LEDs for status indication:
            - 0: Connect LED OFF: debugger is not connected to CMSIS-DAP Debug Unit.
 */
 static __inline void LED_CONNECTED_OUT (uint32_t bit) {
-if(Fast){   
-  digitalWrite_fast_(PIN_LED_CONNECTED, bit ? HIGH : LOW);}
-else{
-  digitalWrite(PIN_LED_CONNECTED, bit ? HIGH : LOW);}
+  LED_CONNECTEDPin.write(bit & 1);
 }
 
 /** Debug Unit: Set status Target Running LED.
@@ -508,10 +592,7 @@ else{
            - 0: Target Running LED OFF: program execution in target stopped.
 */
 static __inline void LED_RUNNING_OUT (uint32_t bit) {
-if(Fast){   
-  digitalWrite_fast_(PIN_LED_RUNNING, bit ? HIGH : LOW);}
-else{
-  digitalWrite(PIN_LED_RUNNING, bit ? HIGH : LOW);}
+  LED_RUNNINGPin.write(bit & 1);
 }
 
 ///@}
@@ -562,15 +643,11 @@ Status LEDs. In detail the operation of Hardware I/O and LED pins are enabled an
  - LED output pins are enabled and LEDs are turned off.
 */
 static __inline void DAP_SETUP (void) {
-  pinMode(PIN_SWCLK, INPUT);
-  pinMode(PIN_SWDIO, INPUT_PULLUP);
-  pinMode(PIN_nRESET, INPUT_PULLUP);
-  pinMode(PIN_TDI, INPUT);
-  pinMode(PIN_TDO, INPUT);
-  pinMode(PIN_LED_CONNECTED, OUTPUT);
-  LED_CONNECTED_OUT(0);
-  pinMode(PIN_LED_RUNNING, OUTPUT);
-  LED_RUNNING_OUT(0);
+  PORT_OFF();
+  LED_CONNECTEDPin.enableOutput();
+  LED_CONNECTEDPin.clear();
+  LED_RUNNINGPin.enableOutput();
+  LED_RUNNINGPin.clear();
 }
 
 /** Reset Target Device with custom specific I/O pin or command sequence.
