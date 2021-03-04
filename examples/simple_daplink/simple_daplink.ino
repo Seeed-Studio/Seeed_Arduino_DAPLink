@@ -94,7 +94,8 @@ uint8_t const desc_hid_report[] =
 
 void setup() {
     USBDevice.setProductDescriptor("CMSIS-DAP");
-
+    //USBDevice.setID(0x0D28,0x0204);
+    
     usb_hid.enableOutEndpoint(true);
     usb_hid.setPollInterval(2);
     usb_hid.setBootProtocol(0);

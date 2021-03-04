@@ -105,6 +105,7 @@ extern "C" void tud_vendor_rx_cb(uint8_t itf)
 void setup() {
     USBDevice.setProductDescriptor("CMSIS-DAP");
     USBDevice.addInterface(cmsisdap_v2);
+    //USBDevice.setID(0x0D28,0x0204);
     
     pinMode(LED_BUILTIN, OUTPUT);
     
