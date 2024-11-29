@@ -50,7 +50,6 @@
  *
  */
 
-#include "Adafruit_TinyUSB.h"
 #include "DAP_config.h"
 #include "DAP.h"
 #include <stdint.h>
@@ -70,7 +69,7 @@ public:
     CMSISDAPV2() {
         this->setStringDescriptor("CMSIS-DAP interface");
     }
-    virtual uint16_t getDescriptor(uint8_t itfnum, uint8_t* buf, uint16_t bufsize) override {
+    virtual uint16_t getInterfaceDescriptor(uint8_t itfnum, uint8_t* buf, uint16_t bufsize) override {
         assert(buf != nullptr);
         if( bufsize == 0 ) return 0;
 

@@ -43,9 +43,10 @@
  *
  */
 
-#include "Adafruit_TinyUSB.h"
+
 #include "DAP_config.h"
 #include "DAP.h"
+
 #include <stdint.h>
 static uint32_t free_count;
 static uint32_t send_count;
@@ -53,6 +54,8 @@ static uint32_t send_count;
 static uint32_t recv_idx;
 static uint32_t send_idx;
 static volatile uint8_t  USB_ResponseIdle;
+
+#define USBDevice TinyUSBDevice
 
 // define usb_hid
 Adafruit_USBD_HID usb_hid;

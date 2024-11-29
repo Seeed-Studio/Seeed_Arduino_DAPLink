@@ -29,6 +29,12 @@
 #ifndef __DAP_CONFIG_H__
 #define __DAP_CONFIG_H__
 
+#if !defined(USE_TINYUSB)
+#error TinyUSB is not selected, please select it in "Tools->Menu->USB Stack"
+#else
+#include "Adafruit_TinyUSB.h"
+#endif
+
 #define __forceinline __attribute__((always_inline))
 #define __weak
 #define OS_TID int
